@@ -205,3 +205,26 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Output folders
+reports/
+uploads/
+*.pdf
+*.docx
+*.png
+*.jpg
+
+.idea/
+
+# ----------------------------------
+# FastAPI / App-specific
+# ----------------------------------
+reports/
+uploads/
+*.pdf
+*.docx
+*.png
+*.jpg
+
+# PyCharm project settings (optional to ignore)
+.idea/

@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+beautifulsoup4
+requests
+textblob
+fpdf
+pytesseract
+Pillow
+PyMuPDF
