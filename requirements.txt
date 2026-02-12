@@ -7,3 +7,15 @@ fpdf
 pytesseract
 Pillow
 PyMuPDF
+sqlalchemy
+vaderSentiment
+python-multipart
+httpx
+readability-lxml
+scikit-learn
+
+# Optional: for smart mode sentiment analysis
+# Uncomment to enable transformer-based analysis (requires more resources)
+# transformers>=4.30.0
+# torch>=2.0.0
+# keybert

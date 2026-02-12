@@ -61,6 +61,12 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+# Literary Analysis API - SQLite database
+literary_analysis.db
+literary_analysis.db-journal
+literary_analysis.db-wal
+literary_analysis.db-shm
+
 # Flask stuff:
 instance/
 .webassets-cache
