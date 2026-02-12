@@ -66,3 +66,52 @@ class HealthResponse(BaseModel):
     status: str
     timestamp: datetime
     database: str
+
+
+# ==================== Literary Analysis Schemas ====================
+
+class Language(str, Enum):
+    english = "english"
+    spanish = "spanish"
+
+
+class SummaryLength(str, Enum):
+    short = "short"
+    medium = "medium"
+
+
+class LiteraryAnalysisRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Text to analyze")
+    language: Language = Field(default=Language.english, description="Output language: english or spanish")
+    summary_length: SummaryLength = Field(default=SummaryLength.medium, description="Summary length: short or medium")
+
+
+class InfluenceItem(BaseModel):
+    name: str = Field(..., description="Name of the influence (author, school, philosophy, etc.)")
+    type: str = Field(..., description="Type of influence (author, school, philosophy, historical, cultural)")
+    rationale: str = Field(..., description="Brief explanation of the influence")
+
+
+class AestheticStyle(BaseModel):
+    style: str = Field(..., description="Name of aesthetic style (e.g., Romanticism, Modernism, etc.)")
+    confidence: str = Field(..., description="Confidence level: high, medium, or low")
+
+
+class LiteraryInsights(BaseModel):
+    summary_short: Optional[str] = Field(None, description="Short summary of the text")
+    summary_medium: Optional[str] = Field(None, description="Medium-length summary of the text")
+    movement_or_tendency: str = Field(..., description="Literary/artistic movement or tendency")
+    influences: List[InfluenceItem] = Field(default_factory=list, description="Detected influences in the text")
+    aesthetic_styles: List[AestheticStyle] = Field(default_factory=list, description="Aesthetic styles present")
+    disclaimer: str = Field(..., description="Disclaimer about interpretive nature of analysis")
+
+
+class LiteraryAnalysisResponse(BaseModel):
+    analysis_id: str = Field(..., description="Unique analysis identifier")
+    created_at: datetime
+    source_type: SourceType
+    language: str
+    insights: LiteraryInsights
+    
+    class Config:
+        from_attributes = True

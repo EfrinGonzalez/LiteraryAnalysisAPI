@@ -5,13 +5,16 @@ from datetime import datetime
 
 from app.models.schemas import (
     TextAnalysisRequest, URLAnalysisRequest, AnalysisResponse,
-    AnalysisListResponse, HealthResponse, SourceType, AnalysisResult, SentimentResult
+    AnalysisListResponse, HealthResponse, SourceType, AnalysisResult, SentimentResult,
+    LiteraryAnalysisRequest, LiteraryAnalysisResponse, LiteraryInsights,
+    InfluenceItem, AestheticStyle
 )
 from app.database import get_db, AnalysisRecord
 from app.services.analysis import analyze_text, compute_text_hash, analyze_text_file
 from app.services.scraper import fetch_article_text
 from app.services.ocr import ocr_image_bytes, ocr_pdf_bytes
 from app.services.sentiment import get_model_info
+from app.services.literary_analysis import analyze_literary_text
 
 import logging
 
@@ -326,6 +329,97 @@ async def list_analyses(
         offset=offset,
         analyses=analysis_responses
     )
+
+
+@router.post("/v1/analyze/literary", response_model=LiteraryAnalysisResponse, tags=["Literary Analysis"])
+async def analyze_literary_endpoint(
+    request: LiteraryAnalysisRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Perform enhanced literary analysis on text to extract:
+    - Summary (short and/or medium length)
+    - Literary movement or tendency
+    - Influences (authors, philosophies, schools)
+    - Aesthetic styles with confidence levels
+    
+    **Note**: This analysis is probabilistic and interpretive. Results should not be
+    considered definitive literary criticism.
+    
+    - **text**: Text to analyze (minimum 200 characters)
+    - **language**: Output language - 'english' (default) or 'spanish'
+    - **summary_length**: Summary length - 'short' or 'medium' (default)
+    """
+    try:
+        # Perform literary analysis
+        insights_dict = analyze_literary_text(
+            text=request.text,
+            language=request.language.value,
+            summary_length=request.summary_length.value
+        )
+        
+        # Create response models
+        influences = [
+            InfluenceItem(
+                name=inf["name"],
+                type=inf["type"],
+                rationale=inf["rationale"]
+            )
+            for inf in insights_dict["influences"]
+        ]
+        
+        aesthetic_styles = [
+            AestheticStyle(
+                style=style["style"],
+                confidence=style["confidence"]
+            )
+            for style in insights_dict["aesthetic_styles"]
+        ]
+        
+        literary_insights = LiteraryInsights(
+            summary_short=insights_dict.get("summary_short"),
+            summary_medium=insights_dict.get("summary_medium"),
+            movement_or_tendency=insights_dict["movement_or_tendency"],
+            influences=influences,
+            aesthetic_styles=aesthetic_styles,
+            disclaimer=insights_dict["disclaimer"]
+        )
+        
+        # Store in database
+        text_hash = compute_text_hash(request.text)
+        
+        # Prepare result dict for storage
+        result_dict = {
+            "literary_insights": insights_dict
+        }
+        
+        analysis_record = AnalysisRecord(
+            source_type=SourceType.text.value,
+            raw_input_hash=text_hash,
+            extracted_text=request.text[:1000],
+            mode="literary",
+            model_version="literary_analysis_v1",
+            result=result_dict
+        )
+        
+        db.add(analysis_record)
+        db.commit()
+        db.refresh(analysis_record)
+        
+        return LiteraryAnalysisResponse(
+            analysis_id=analysis_record.id,
+            created_at=analysis_record.created_at,
+            source_type=SourceType.text,
+            language=request.language.value,
+            insights=literary_insights
+        )
+        
+    except ValueError as e:
+        # Handle validation errors (e.g., text too short)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error in literary analysis: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Literary analysis failed: {str(e)}")
 
 
 # ==================== Legacy Endpoints (for backward compatibility) ====================
