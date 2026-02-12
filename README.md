@@ -240,6 +240,132 @@ All analysis results are stored in a local SQLite database (`literary_analysis.d
 
 The database file is created in the root directory: `literary_analysis.db`
 
+### Database Schema
+
+The SQLite database contains a single table named `analyses` with the following structure:
+
+| Column Name      | Type     | Description                                          |
+|------------------|----------|------------------------------------------------------|
+| `id`             | VARCHAR  | Primary key, UUID v4 format (e.g., `a1b2c3d4-...`)  |
+| `created_at`     | DATETIME | Timestamp when analysis was created (UTC)            |
+| `source_type`    | VARCHAR  | Type of input: `text`, `url`, or `image`            |
+| `raw_input_hash` | VARCHAR  | SHA-256 hash of the input text (for deduplication)  |
+| `url`            | VARCHAR  | Original URL (only for `url` source type)           |
+| `filename`       | VARCHAR  | Original filename (only for `image` source type)    |
+| `extracted_text` | TEXT     | First 1000 characters of analyzed text              |
+| `mode`           | VARCHAR  | Analysis mode used: `fast` or `smart`               |
+| `model_version`  | VARCHAR  | Model identifier (e.g., `VADER` or `distilbert...`) |
+| `result`         | JSON     | Complete analysis results (sentiment, keywords, etc)|
+
+**Example SQL Query:**
+```sql
+SELECT id, created_at, source_type, mode 
+FROM analyses 
+ORDER BY created_at DESC 
+LIMIT 10;
+```
+
+### Inspecting the Database
+
+You can inspect the SQLite database using various desktop applications:
+
+#### Recommended Tools
+
+1. **DB Browser for SQLite** (Free, Cross-platform)
+   - Download: https://sqlitebrowser.org/
+   - Features: Visual table browser, SQL editor, data export
+   - Usage: Open `File` → `Open Database` → Select `literary_analysis.db`
+
+2. **DBeaver** (Free, Cross-platform)
+   - Download: https://dbeaver.io/
+   - Features: Universal database tool, supports many formats
+   - Usage: `Database` → `New Database Connection` → `SQLite` → Browse to `literary_analysis.db`
+
+3. **SQLiteStudio** (Free, Cross-platform)
+   - Download: https://sqlitestudio.pl/
+   - Features: Lightweight, portable, no installation required
+
+4. **DataGrip** (Paid, by JetBrains)
+   - Download: https://www.jetbrains.com/datagrip/
+   - Features: Professional IDE for databases
+
+#### Command Line Inspection
+
+You can also use the SQLite command-line tool:
+
+```bash
+# Open the database
+sqlite3 literary_analysis.db
+
+# List all tables
+.tables
+
+# Show table schema
+.schema analyses
+
+# Query all analyses
+SELECT id, created_at, source_type, mode FROM analyses;
+
+# Count total analyses
+SELECT COUNT(*) FROM analyses;
+
+# Get analyses by source type
+SELECT COUNT(*), source_type FROM analyses GROUP BY source_type;
+
+# Export to CSV
+.mode csv
+.output analyses_export.csv
+SELECT * FROM analyses;
+.output stdout
+
+# Exit
+.quit
+```
+
+#### Viewing JSON Results
+
+The `result` column contains JSON data. To view it formatted:
+
+**Using SQLite CLI:**
+```bash
+sqlite3 literary_analysis.db
+.mode json
+SELECT id, json_extract(result, '$.sentiment.polarity_label') as sentiment 
+FROM analyses LIMIT 5;
+```
+
+**Using Python:**
+```python
+import sqlite3
+import json
+
+conn = sqlite3.connect('literary_analysis.db')
+cursor = conn.cursor()
+cursor.execute("SELECT id, result FROM analyses LIMIT 5")
+
+for row in cursor.fetchall():
+    analysis_id, result_json = row
+    result = json.loads(result_json)
+    print(f"ID: {analysis_id}")
+    print(f"Sentiment: {result['sentiment']['polarity_label']}")
+    print(f"Keywords: {', '.join(result['keywords'][:5])}")
+    print("---")
+
+conn.close()
+```
+
+### Database Backup
+
+To backup your analysis data:
+
+```bash
+# Simple copy
+cp literary_analysis.db literary_analysis_backup_$(date +%Y%m%d).db
+
+# Or use SQLite backup command
+sqlite3 literary_analysis.db ".backup literary_analysis_backup.db"
+```
+
 ### Reset Database
 
 To reset the database, simply delete the file:
@@ -249,6 +375,17 @@ rm literary_analysis.db
 ```
 
 The database will be recreated automatically on next API startup.
+
+### Database File Location
+
+When running the API with `uvicorn app.main:app`, the database is created in:
+- **Current working directory**: `./literary_analysis.db`
+- **Absolute path**: Where you run the uvicorn command
+
+If you run from `/home/user/LiteraryAnalysisAPI`, the database will be at:
+```
+/home/user/LiteraryAnalysisAPI/literary_analysis.db
+```
 
 ## Testing
 
