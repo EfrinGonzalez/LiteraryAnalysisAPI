@@ -13,6 +13,9 @@ python-multipart
 httpx
 readability-lxml
 scikit-learn
+pytest
+pytest-asyncio
+httpx  # for testing
 
 # Optional: for smart mode sentiment analysis
 # Uncomment to enable transformer-based analysis (requires more resources)

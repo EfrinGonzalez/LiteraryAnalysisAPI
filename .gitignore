@@ -66,6 +66,8 @@ literary_analysis.db
 literary_analysis.db-journal
 literary_analysis.db-wal
 literary_analysis.db-shm
+test_literary_analysis.db
+test_literary_analysis.db-journal
 
 # Flask stuff:
 instance/
