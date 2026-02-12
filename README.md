@@ -7,6 +7,13 @@ FastAPI backend for analyzing text, URLs, and images with advanced sentiment ana
 - 📝 **Text Analysis**: Analyze plain text with sentiment analysis and keyword extraction
 - 🌐 **URL Analysis**: Fetch and analyze web articles with SSRF protection
 - 🖼️ **Image Analysis**: Extract text from images using OCR and analyze it
+- 📚 **Literary Analysis (NEW)**: Enhanced insights for literary texts including:
+  - Summaries (short and medium length)
+  - Literary movement/tendency detection (Romanticism, Modernism, etc.)
+  - Influences identification (authors, philosophies, schools)
+  - Aesthetic styles with confidence levels
+  - **Bilingual support**: English and Spanish output
+  - **Interpretive disclaimer**: Clear communication about probabilistic nature
 - 🧠 **Tiered Sentiment Analysis**:
   - **Fast Mode**: VADER lexicon-based sentiment (instant results)
   - **Smart Mode**: Transformer-based analysis (optional, requires additional dependencies)
@@ -165,6 +172,81 @@ curl -X POST http://localhost:8000/v1/analyze/image \
 - `mode` (string, optional): `"fast"` (default) or `"smart"`
 
 **Requirements**: Tesseract OCR must be installed.
+
+### Literary Analysis (Enhanced)
+
+**POST** `/v1/analyze/literary`
+
+Perform enhanced literary analysis to extract rich insights about texts. This endpoint provides:
+- Text summaries (short and medium length)
+- Literary movement or tendency identification
+- Influences detection (authors, philosophies, schools)
+- Aesthetic styles with confidence levels
+
+**Important**: This analysis is probabilistic and interpretive. Results are computational suggestions and should not be considered definitive literary criticism.
+
+```bash
+curl -X POST http://localhost:8000/v1/analyze/literary \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "In the depths of the forest, where nature'\''s beauty unfolds in all its sublime glory, the individual soul finds its truest expression. The trees whisper secrets of the heart, and the wind carries the passion of countless generations. Here, in this romantic haven, imagination reigns supreme, and emotion flows like a river through the landscape of dreams.",
+    "language": "english",
+    "summary_length": "medium"
+  }'
+```
+
+**Parameters:**
+- `text` (string, required): Text to analyze (minimum 200 characters for meaningful insights)
+- `language` (string, optional): Output language - `"english"` (default) or `"spanish"`
+- `summary_length` (string, optional): Summary length - `"short"` or `"medium"` (default)
+
+**Response:**
+```json
+{
+  "analysis_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "created_at": "2026-02-12T20:00:00.000Z",
+  "source_type": "text",
+  "language": "english",
+  "insights": {
+    "summary_short": "In the depths of the forest, where nature's beauty unfolds in all its sublime glory, the individual soul finds its truest expression.",
+    "summary_medium": "In the depths of the forest, where nature's beauty unfolds in all its sublime glory, the individual soul finds its truest expression. The trees whisper secrets of the heart, and the wind carries the passion of countless generations. Here, in this romantic haven, imagination reigns supreme, and emotion flows like a river through the landscape of dreams.",
+    "movement_or_tendency": "Romanticism",
+    "influences": [
+      {
+        "name": "Romanticism",
+        "type": "philosophy",
+        "rationale": "Detected through thematic and stylistic elements characteristic of Romanticism"
+      }
+    ],
+    "aesthetic_styles": [
+      {
+        "style": "Romanticism",
+        "confidence": "high"
+      },
+      {
+        "style": "Symbolism",
+        "confidence": "medium"
+      }
+    ],
+    "disclaimer": "This analysis is probabilistic and interpretive in nature. The identified movements, influences, and styles are suggestions based on computational text analysis and should not be considered definitive literary criticism. Human expert analysis may yield different interpretations."
+  }
+}
+```
+
+**Spanish Example:**
+```bash
+curl -X POST http://localhost:8000/v1/analyze/literary \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "En las profundidades del bosque, donde la naturaleza despliega su belleza sublime...",
+    "language": "spanish",
+    "summary_length": "short"
+  }'
+```
+
+**Validation:**
+- Texts shorter than 200 characters will return a 400 error with a helpful message
+- Empty text will return a 422 validation error
 
 ### Retrieve Analysis by ID
 
@@ -396,8 +478,10 @@ pytest tests/ -v
 ```
 
 Tests cover:
-- ✅ All API endpoints
+- ✅ All API endpoints (including literary analysis)
 - ✅ Sentiment analysis (positive, negative, neutral)
+- ✅ Literary analysis (movements, influences, styles)
+- ✅ Bilingual support (English and Spanish)
 - ✅ SSRF protection
 - ✅ Input validation
 - ✅ Database persistence
@@ -408,24 +492,26 @@ Tests cover:
 ```
 LiteraryAnalysisAPI/
 ├── app/
-│   ├── main.py              # FastAPI application
-│   ├── routes.py            # API endpoints
-│   ├── database.py          # Database models & session
+│   ├── main.py                   # FastAPI application
+│   ├── routes.py                 # API endpoints
+│   ├── database.py               # Database models & session
 │   ├── models/
-│   │   └── schemas.py       # Pydantic models
+│   │   └── schemas.py            # Pydantic models
 │   └── services/
-│       ├── analysis.py      # Main analysis logic
-│       ├── sentiment.py     # Sentiment analysis (VADER + transformers)
-│       ├── keywords.py      # Keyword extraction
-│       ├── scraper.py       # URL fetching with SSRF protection
-│       ├── ocr.py           # Image OCR processing
-│       └── report_writer.py # PDF report generation (legacy)
+│       ├── analysis.py           # Main analysis logic
+│       ├── sentiment.py          # Sentiment analysis (VADER + transformers)
+│       ├── literary_analysis.py  # Literary insights analysis (NEW)
+│       ├── keywords.py           # Keyword extraction
+│       ├── scraper.py            # URL fetching with SSRF protection
+│       ├── ocr.py                # Image OCR processing
+│       └── report_writer.py      # PDF report generation (legacy)
 ├── tests/
-│   ├── conftest.py          # Test configuration
-│   ├── test_api.py          # API endpoint tests
-│   └── test_security.py     # Security tests
-├── requirements.txt         # Python dependencies
-└── README.md               # This file
+│   ├── conftest.py               # Test configuration
+│   ├── test_api.py               # API endpoint tests
+│   ├── test_literary_analysis.py # Literary analysis tests (NEW)
+│   └── test_security.py          # Security tests
+├── requirements.txt              # Python dependencies
+└── README.md                     # This file
 ```
 
 ## Legacy Endpoints
